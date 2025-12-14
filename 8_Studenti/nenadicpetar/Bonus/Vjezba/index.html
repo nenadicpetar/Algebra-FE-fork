@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="hr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>App za ocjenjivanje filmova</title>
+    <style>
+      /* ---------- Osnovni reset i tipografija ---------- */
+      :root {
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --accent: #3b82f6;
+        --muted: #6b7280;
+        --success: #10b981;
+        --danger: #ef4444;
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: #111827;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        padding: 24px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+      }
+
+      /* ---------- Kontejner aplikacije ---------- */
+      .app {
+        width: 100%;
+        max-width: 920px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.9),
+          rgba(255, 255, 255, 0.98)
+        );
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 20px;
+      }
+
+      /* ---------- Header ---------- */
+      header {
+        grid-column: 1/-1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      /* ---------- Forma za unos ---------- */
+      form.add-movie {
+        background: var(--card);
+        padding: 14px;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      label {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      input[type="text"],
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(15, 23, 42, 0.06);
+        outline: none;
+        font-size: 14px;
+        background: transparent;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      button {
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 0;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+      }
+      button.secondary {
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid rgba(59, 130, 246, 0.12);
+      }
+
+      /* ---------- Lista filmova ---------- */
+      .list-card {
+        background: var(--card);
+        padding: 12px;
+        border-radius: 12px;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .movie-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        border-radius: 10px;
+        transition: background 0.15s;
+      }
+      .movie-item:hover {
+        background: rgba(15, 23, 42, 0.03);
+      }
+
+      /* ---------- Ovalni oblik lista (leaf) ---------- */
+      /* Ovo je "list" kao list biljke: oblik se crta koristeći border-radius */
+      .leaf {
+        width: 64px;
+        height: 36px;
+        border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%;
+        background: linear-gradient(135deg, #6ee7b7 0%, #10b981 60%);
+        transform: rotate(-18deg);
+        position: relative;
+        flex: 0 0 auto;
+        box-shadow: 0 6px 12px rgba(16, 24, 40, 0.08) inset;
+      }
+      /* stabljika lista */
+      .leaf::after {
+        content: "";
+        position: absolute;
+        right: -6px;
+        bottom: 6px;
+        width: 8px;
+        height: 6px;
+        background: #6b8e5a;
+        border-radius: 2px;
+        transform: rotate(18deg);
+      }
+
+      .movie-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .movie-title {
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .movie-meta {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .rating-badge {
+        min-width: 46px;
+        text-align: center;
+        padding: 6px 8px;
+        border-radius: 10px;
+        font-weight: 700;
+        background: linear-gradient(180deg, #fff, #f3f4f6);
+        border: 1px solid rgba(15, 23, 42, 0.06);
+      }
+      .movie-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-left: 8px;
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      /* ---------- Responsivno: na manjim ekranima stavimo jednu kolonu ---------- */
+      @media (max-width: 820px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .movie-controls {
+          flex-direction: row;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 14px;
+        }
+        .leaf {
+          width: 52px;
+          height: 28px;
+        }
+        header h1 {
+          font-size: 16px;
+        }
+        .app {
+          padding: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" id="app">
+      <header>
+        <div class="leaf" aria-hidden="true"></div>
+        <div>
+          <h1>Ocjeni film</h1>
+          <p>
+            Unesi naslov filma i ocjenu 1–10. Podaci se spremaju u lokalni
+            uređaj.
+          </p>
+        </div>
+      </header>
+
+      <!-- Forma za unos -->
+      <form class="add-movie" id="movieForm" autocomplete="off">
+        <div>
+          <label for="title">Naziv filma</label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            placeholder="Npr. Povratak u budućnost"
+            required
+          />
+        </div>
+
+        <div>
+          <label for="rating">Ocjena (1-10)</label>
+          <select id="rating" name="rating" required>
+            <option value="" disabled selected>Odaberi ocjenu</option>
+            <!-- generirano iz JS -->
+          </select>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Spremi</button>
+          <button type="button" class="secondary" id="clearAll">
+            Obriši sve
+          </button>
+          <div
+            style="margin-left: auto; color: var(--muted); font-size: 13px"
+            id="count"
+          ></div>
+        </div>
+      </form>
+
+      <!-- Lista filmova -->
+      <section class="list-card" id="list">
+        <!-- Stavke se ubacuju ovdje -->
+        <div id="empty" class="small">
+          Nema spremljenih filmova — dodaj prvi!
+        </div>
+      </section>
+    </div>
+
+    <script>
+      /* ---------- Jednostavan JS za spremanje / brisanje filmova u localStorage ---------- */
+      const KEY = "movie-ratings-v1";
+      const form = document.getElementById("movieForm");
+      const titleInput = document.getElementById("title");
+      const ratingSelect = document.getElementById("rating");
+      const list = document.getElementById("list");
+      const empty = document.getElementById("empty");
+      const count = document.getElementById("count");
+      const clearAllBtn = document.getElementById("clearAll");
+
+      // napuni select ocjena 1-10
+      for (let i = 1; i <= 10; i++) {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = i;
+        ratingSelect.appendChild(opt);
+      }
+
+      function load() {
+        try {
+          const raw = localStorage.getItem(KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          console.error("Ne mogu parsirati localStorage", e);
+          return [];
+        }
+      }
+      function saveAll(items) {
+        localStorage.setItem(KEY, JSON.stringify(items));
+        render(items);
+      }
+
+      function render(items) {
+        // očisti postojeće stavke (osim ako se ne prikazuje empty)
+        list.querySelectorAll(".movie-item").forEach((n) => n.remove());
+        if (items.length === 0) {
+          empty.style.display = "block";
+          count.textContent = "0";
+          return;
+        }
+        empty.style.display = "none";
+        count.textContent =
+          items.length + (items.length === 1 ? " film" : " filma");
+
+        items.forEach((it, idx) => {
+          const el = document.createElement("div");
+          el.className = "movie-item";
+
+          // lijevi dekorativni ovalni list
+          const leaf = document.createElement("div");
+          leaf.className = "leaf";
+          leaf.setAttribute("aria-hidden", "true");
+
+          // tekst
+          const body = document.createElement("div");
+          body.className = "movie-body";
+          const title = document.createElement("div");
+          title.className = "movie-title";
+          title.textContent = it.title;
+          const meta = document.createElement("div");
+          meta.className = "movie-meta";
+          meta.textContent =
+            "Ocjena: " +
+            it.rating +
+            " • dodano: " +
+            new Date(it.added).toLocaleString();
+          body.appendChild(title);
+          body.appendChild(meta);
+
+          // ocjena kao bedž
+          const badge = document.createElement("div");
+          badge.className = "rating-badge";
+          badge.textContent = it.rating;
+
+          // kontrole
+          const controls = document.createElement("div");
+          controls.className = "movie-controls";
+          const del = document.createElement("button");
+          del.className = "small";
+          del.textContent = "Obriši";
+          del.type = "button";
+          del.addEventListener("click", () => {
+            if (!confirm("Jeste li sigurni da želite obrisati ovaj unos?"))
+              return;
+            const all = load();
+            all.splice(idx, 1);
+            saveAll(all);
+          });
+
+          controls.appendChild(del);
+
+          el.appendChild(leaf);
+          el.appendChild(body);
+          el.appendChild(badge);
+          el.appendChild(controls);
+
+          list.appendChild(el);
+        });
+      }
+
+      // inicijalno učitavanje
+      document.addEventListener("DOMContentLoaded", () => {
+        render(load());
+      });
+
+      // obrada forme
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const title = titleInput.value.trim();
+        const rating = ratingSelect.value;
+        if (!title) {
+          alert("Unesite naziv filma.");
+          titleInput.focus();
+          return;
+        }
+        if (!rating) {
+          alert("Odaberite ocjenu.");
+          ratingSelect.focus();
+          return;
+        }
+
+        const all = load();
+        all.unshift({
+          title,
+          rating: Number(rating),
+          added: new Date().toISOString(),
+        });
+        saveAll(all);
+
+        // reset forme
+        form.reset();
+        ratingSelect.selectedIndex = 0;
+        titleInput.focus();
+      });
+
+      clearAllBtn.addEventListener("click", () => {
+        if (!confirm("Obrisati sve spremljene filmove?")) return;
+        localStorage.removeItem(KEY);
+        render([]);
+      });
+    </script>
+  </body>
+</html>
